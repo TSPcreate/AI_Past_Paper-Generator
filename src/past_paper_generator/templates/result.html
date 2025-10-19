@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Your paper is ready · GCSE Past Paper Generator{% endblock %}
+{% block content %}
+<section class="card">
+  <h2 class="card__title">Your bespoke paper is ready</h2>
+  <p class="card__description">Download the PDF files or review the generated content below.</p>
+  <div class="download-actions">
+    <a class="button" href="{{ paper_url }}">Download paper</a>
+    <a class="button button--secondary" href="{{ scheme_url }}">Download mark scheme</a>
+  </div>
+</section>
+<section class="summary">
+  <h3>Summary</h3>
+  <dl class="summary-grid">
+    <div><dt>Subject</dt><dd>{{ bundle.params.subject|title }}</dd></div>
+    <div><dt>Exam board</dt><dd>{{ bundle.params.exam_board|upper }}</dd></div>
+    <div><dt>Tier</dt><dd>{{ bundle.params.tier|title }}</dd></div>
+    <div><dt>Difficulty</dt><dd>{{ bundle.params.difficulty|title }}</dd></div>
+    <div><dt>Questions</dt><dd>{{ questions|length }}</dd></div>
+  </dl>
+</section>
+<section class="table-section">
+  <h3>Questions</h3>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Topic</th>
+          <th>Question</th>
+          <th>Marks</th>
+          <th>Difficulty</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for question in questions %}
+        <tr>
+          <td>{{ question.number }}</td>
+          <td>{{ question.topic }}</td>
+          <td>{{ question.prompt }}</td>
+          <td>{{ question.marks }}</td>
+          <td>{{ question.difficulty }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<section class="table-section">
+  <h3>Mark scheme</h3>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Answer outline</th>
+          <th>Marks</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in mark_scheme %}
+        <tr>
+          <td>{{ entry.number }}</td>
+          <td>{{ entry.answer }}</td>
+          <td>{{ entry.marks }}</td>
+          <td>{{ entry.notes or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<section class="cta">
+  <a class="button" href="{{ url_for('index') }}">Create another paper</a>
+</section>
+{% endblock %}
