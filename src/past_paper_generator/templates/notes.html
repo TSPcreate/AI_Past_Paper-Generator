@@ -68,8 +68,8 @@
         <ul class="quick-checks">
           {% for check in section.quick_checks %}
           <li>
-            <button type="button" class="quick-checks__prompt" data-answer="qc-{{ loop.parentloop.index }}-{{ loop.index }}">{{ check.prompt }}</button>
-            <span class="quick-checks__answer" id="qc-{{ loop.parentloop.index }}-{{ loop.index }}" hidden>{{ check.answer }}</span>
+            <button type="button" class="quick-checks__prompt" data-answer="qc-{{ loop.parent.index }}-{{ loop.index }}">{{ check.prompt }}</button>
+            <span class="quick-checks__answer" id="qc-{{ loop.parent.index }}-{{ loop.index }}" hidden>{{ check.answer }}</span>
           </li>
           {% endfor %}
         </ul>
