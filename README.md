@@ -9,7 +9,9 @@ An end-to-end demo that produces GCSE-style exam papers and mark schemes from si
 - **Styled PDFs** – ReportLab layouts for both the exam paper and the accompanying mark scheme.
 - **Modern frontend** – responsive design, summary tables and quick download actions.
 - **Exam logistics** – each question includes total marks, recommended timing, skill focus and specification references.
-- **Reflection workflow** – log weaknesses to instantly generate flashcards, summary notes and curated resource links.
+- **AFE study suite** – adaptive flashcard reviewer with hints, keyboard shortcuts and SM2-lite scheduling.
+- **Micro notes** – revealable quick checks, anchor problems and print-friendly sections per topic.
+- **Resource hub** – curated links and smart search prompts grouped by topic with session-persistent state.
 
 ## Project layout
 
@@ -21,8 +23,9 @@ src/past_paper_generator/
 ├── llm_stub.py            # Deterministic question + mark scheme generator
 ├── pdf.py                 # PDF rendering helpers
 ├── schemas.py             # Data models and validation
-├── static/                # CSS assets
-└── templates/             # HTML templates
+├── study.py               # Builds flashcards, notes and resources
+├── static/                # CSS and JS assets
+└── templates/             # HTML templates (generator + study suite)
 ```
 
 ## Getting started
@@ -71,7 +74,7 @@ Generated PDFs are stored inside the `outputs/` directory. Use the download butt
 - Update the question templates inside `llm_stub.py` to expand topic coverage or supply real prompt/response examples.
 - Adjust typography, colours or layout by editing `static/styles.css` and the templates inside `templates/`.
 - Modify `pdf.py` to incorporate branding, logos or multi-column mark schemes.
-- Extend `revision.py` to integrate real analytics, progress tracking or spaced-repetition tooling.
+- Adapt `study.py` to plug in live data sources for flashcards, notes or resource recommendations.
 
 ## Testing the core service
 

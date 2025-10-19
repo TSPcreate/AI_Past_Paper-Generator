@@ -81,75 +81,27 @@
     </table>
   </div>
 </section>
-<section class="reflection" id="reflection">
-  <h3>Reflect &amp; rebuild</h3>
-  <p>Log your trickiest areas so AFE can craft flashcards, summary notes and follow-up resources.</p>
-  <form class="reflection-form" action="{{ url_for('reflect', slug=bundle.slug) }}" method="post">
-    <label class="form-field">
-      <span class="form-label">Topics or questions you struggled with</span>
-      <textarea name="weaknesses" rows="3" required>{{ submission.weaknesses if submission else '' }}</textarea>
-    </label>
-    <label class="form-field">
-      <span class="form-label">What went well / what held you back?</span>
-      <textarea name="reflection" rows="3">{{ submission.reflection if submission else '' }}</textarea>
-    </label>
-    <label class="form-field">
-      <span class="form-label">Next steps you'd like to take</span>
-      <textarea name="improvements" rows="3">{{ submission.improvements if submission else '' }}</textarea>
-    </label>
-    <button class="button" type="submit">Build revision pack</button>
-  </form>
-</section>
-{% if revision_plan %}
-<section class="plan" id="revision-plan">
-  <h3>Personalised revision pack</h3>
-  <article class="plan__summary">
-    <h4>Focus topics</h4>
-    <p>{{ revision_plan.focus_topics|join(', ') }}</p>
-  </article>
-  <div class="plan__grid">
-    <article class="plan__column">
-      <h4>Flashcards</h4>
-      <ul>
-        {% for card in revision_plan.flashcards %}
-        <li>
-          <strong>{{ card.topic }}</strong><br>
-          <span class="flashcard-front">{{ card.front }}</span><br>
-          <span class="flashcard-back">{{ card.back }}</span>
-        </li>
-        {% endfor %}
-      </ul>
+<section class="study-suite">
+  <h3>Continue with AFE study tools</h3>
+  <p class="study-suite__intro">Move from practice to mastery with adaptive flashcards, concise notes and curated resources.</p>
+  <div class="study-suite__grid">
+    <article class="study-card">
+      <h4>Flashcard review</h4>
+      <p>Flip through spaced-repetition cards with hints, streak tracking and light SRS scheduling.</p>
+      <a class="button" href="{{ url_for('flashcards', slug=bundle.slug) }}">Start reviewing</a>
     </article>
-    <article class="plan__column">
+    <article class="study-card">
       <h4>Summary notes</h4>
-      {% for note in revision_plan.notes %}
-      <div class="note">
-        <strong>{{ note.heading }}</strong>
-        <ul>
-          {% for point in note.bullet_points %}
-          <li>{{ point }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endfor %}
+      <p>Skim micro-notes with revealable checks, mini examples and print-ready layouts per topic.</p>
+      <a class="button" href="{{ url_for('notes', slug=bundle.slug) }}">Open notes</a>
     </article>
-    <article class="plan__column">
-      <h4>Resources</h4>
-      <ul>
-        {% for resource in revision_plan.resources %}
-        <li><a href="{{ resource.url }}" target="_blank" rel="noopener">{{ resource.title }}</a><br><span>{{ resource.description }}</span></li>
-        {% endfor %}
-      </ul>
-      <h4>Next steps</h4>
-      <ol>
-        {% for step in revision_plan.next_steps %}
-        <li>{{ step }}</li>
-        {% endfor %}
-      </ol>
+    <article class="study-card">
+      <h4>Resource hub</h4>
+      <p>Launch high-impact follow-up resources and smart search prompts grouped by topic.</p>
+      <a class="button" href="{{ url_for('resources', slug=bundle.slug) }}">Explore resources</a>
     </article>
   </div>
 </section>
-{% endif %}
 <section class="cta">
   <a class="button" href="{{ url_for('index') }}">Create another paper</a>
 </section>

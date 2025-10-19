@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Flashcards · AFE Study Suite{% endblock %}
+{% block content %}
+<section class="card flashcards">
+  <header class="flashcards__header">
+    <div>
+      <h2>Flashcards</h2>
+      <p class="flashcards__subtitle">Keyboard ready: Space to flip · 1–4 to grade · ←/→ to move.</p>
+    </div>
+    <div class="flashcards__actions">
+      <button class="button button--secondary" data-action="shuffle">Shuffle</button>
+      <button class="button button--secondary" data-action="reset">Reset</button>
+      <button class="button button--secondary" data-action="export">Export CSV</button>
+    </div>
+  </header>
+  <form class="flashcards__filters" id="flashcard-filters">
+    <label>
+      <span>Topic</span>
+      <select name="topic">
+        <option value="">All topics</option>
+        {% for topic in topics %}
+        <option value="{{ topic }}">{{ topic }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>Difficulty</span>
+      <select name="difficulty">
+        <option value="">All difficulties</option>
+        {% for difficulty in difficulties %}
+        <option value="{{ difficulty }}">{{ difficulty|title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>Skill</span>
+      <select name="skill_type">
+        <option value="">All skills</option>
+        {% for skill in skill_types %}
+        <option value="{{ skill }}">{{ skill }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </form>
+  <div class="flashcards__status">
+    <span class="progress-pill" id="progress-pill">Today: 0/0</span>
+    <div class="streak" id="streak-indicator" aria-live="polite"></div>
+  </div>
+  <div class="flashcard-panel" id="flashcard-panel" data-side="front">
+    <div class="flashcard-panel__meta">
+      <span class="badge" id="card-topic">Topic</span>
+      <span class="badge badge--muted" id="card-difficulty">Difficulty</span>
+      <span class="badge badge--muted" id="card-skill">Skill focus</span>
+      <span class="badge badge--due" id="card-due">Due today</span>
+    </div>
+    <div class="flashcard-panel__body">
+      <p id="card-front" class="flashcard-panel__front">Select a card to begin.</p>
+      <div id="card-back" class="flashcard-panel__back" hidden></div>
+      <div id="card-why" class="flashcard-panel__why" hidden></div>
+    </div>
+    <div class="flashcard-panel__hint" id="card-hint" hidden></div>
+    <div class="flashcard-panel__controls">
+      <button class="button button--secondary" type="button" data-action="hint">Show hint</button>
+      <button class="button" type="button" data-action="flip">Flip (Space)</button>
+    </div>
+  </div>
+  <div class="review-controls">
+    <button type="button" class="review-button" data-grade="again">1 · Again</button>
+    <button type="button" class="review-button" data-grade="hard">2 · Hard</button>
+    <button type="button" class="review-button" data-grade="good">3 · Good</button>
+    <button type="button" class="review-button" data-grade="easy">4 · Easy</button>
+  </div>
+</section>
+<section class="keyboard-help" id="keyboard-help">
+  <button class="keyboard-help__toggle" type="button" data-action="toggle-help">Keyboard shortcuts</button>
+  <div class="keyboard-help__body" hidden>
+    <dl>
+      <div><dt>Space</dt><dd>Flip current card</dd></div>
+      <div><dt>1</dt><dd>Mark as Again (reset interval)</dd></div>
+      <div><dt>2</dt><dd>Mark as Hard</dd></div>
+      <div><dt>3</dt><dd>Mark as Good</dd></div>
+      <div><dt>4</dt><dd>Mark as Easy</dd></div>
+      <div><dt>←/→</dt><dd>Move to previous/next card</dd></div>
+      <div><dt>H</dt><dd>Reveal next hint</dd></div>
+      <div><dt>R</dt><dd>Reset scheduling</dd></div>
+    </dl>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script id="flashcard-data" type="application/json" data-storage-key="afe-flashcards-{{ bundle.slug }}">{{ cards|tojson }}</script>
+<script src="{{ url_for('static', filename='flashcards.js') }}"></script>
+{% endblock %}

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -117,40 +117,69 @@ class MarkSchemeEntry:
 
 
 @dataclass(slots=True)
-class RevisionFlashcard:
-    """A targeted flashcard generated after learner reflection."""
+class Flashcard:
+    """Spaced-repetition flashcard enriched with hints and scheduling."""
 
+    id: str
     topic: str
+    difficulty: str
+    skill_type: str
     front: str
     back: str
+    hints: tuple[str, ...] = ()
+    why_wrong: str | None = None
+    ease: float = 2.3
+    interval_days: int = 1
+    due_iso: str = field(
+        default_factory=lambda: (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
+    streak: int = 0
 
 
 @dataclass(slots=True)
-class ResourceLink:
-    """Reference material to deepen understanding of a weak area."""
+class QuickCheck:
+    """Low-stakes question with a revealable answer."""
 
+    prompt: str
+    answer: str
+
+
+@dataclass(slots=True)
+class NotesSection:
+    """Focused summary notes for a single concept."""
+
+    topic: str
+    skill_focus: str
+    key_idea: str
+    formulas: tuple[str, ...]
+    monospaced_formulas: bool
+    mini_example_setup: str
+    mini_example_steps: tuple[str, ...]
+    common_traps: tuple[str, ...]
+    quick_checks: tuple[QuickCheck, ...]
+    anchor_problem: str | None = None
+    anchor_solution: str | None = None
+
+
+@dataclass(slots=True)
+class ResourceItem:
+    """High-impact follow-up material."""
+
+    topic: str
+    type: str
     title: str
-    url: str
-    description: str
+    link_or_query: str
+    est_time_min: int
+    why_this: str
 
 
 @dataclass(slots=True)
-class RevisionNote:
-    """Concise summary notes keyed to a specific misconception."""
+class StudyMaterials:
+    """Collection of study artefacts derived from a generated paper."""
 
-    heading: str
-    bullet_points: tuple[str, ...]
-
-
-@dataclass(slots=True)
-class RevisionPlan:
-    """Structured plan returned after the learner submits reflections."""
-
-    focus_topics: tuple[str, ...]
-    flashcards: tuple[RevisionFlashcard, ...]
-    notes: tuple[RevisionNote, ...]
-    resources: tuple[ResourceLink, ...]
-    next_steps: tuple[str, ...]
+    flashcards: tuple[Flashcard, ...]
+    notes: tuple[NotesSection, ...]
+    resources: tuple[ResourceItem, ...]
 
 
 @dataclass(slots=True)

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from dataclasses import asdict
+
 from flask import (
     Flask,
     abort,
@@ -16,7 +18,6 @@ from flask import (
 )
 
 from .generator import PastPaperService
-from .revision import ReflectionSubmission, build_revision_plan
 from .schemas import (
     ALLOWED_DIFFICULTIES,
     ALLOWED_EXAM_BOARDS,
@@ -26,6 +27,7 @@ from .schemas import (
     PaperBundle,
     ValidationError,
 )
+from .study import build_study_materials
 
 OUTPUT_DIR = Path("outputs")
 
@@ -37,6 +39,7 @@ app = Flask(
 app.secret_key = "change-me"
 service = PastPaperService()
 BUNDLE_CACHE: dict[str, PaperBundle] = {}
+STUDY_CACHE = {}
 
 
 @app.route("/", methods=["GET"])
@@ -66,24 +69,73 @@ def generate() -> str:
 
     bundle = service.generate(params, output_dir=OUTPUT_DIR)
     BUNDLE_CACHE[bundle.slug] = bundle
+    STUDY_CACHE[bundle.slug] = build_study_materials(bundle)
     return _render_result(bundle)
 
 
-@app.route("/reflect/<slug>", methods=["POST"])
-def reflect(slug: str) -> str:
+@app.route("/flashcards/<slug>")
+def flashcards(slug: str) -> str:
     bundle = BUNDLE_CACHE.get(slug)
-    if bundle is None:
-        flash("Session expired. Regenerate the paper to submit reflections.", "error")
+    materials = STUDY_CACHE.get(slug)
+    if not bundle or not materials:
+        flash("That study session has expired. Generate a fresh paper to continue.", "error")
         return redirect(url_for("index"))
 
-    submission = ReflectionSubmission(
-        weaknesses=request.form.get("weaknesses", ""),
-        reflection=request.form.get("reflection", ""),
-        improvements=request.form.get("improvements", ""),
+    cards = [asdict(card) for card in materials.flashcards]
+    topics = sorted({card["topic"] for card in cards})
+    difficulties = sorted({card["difficulty"] for card in cards})
+    skill_types = sorted({card["skill_type"] for card in cards})
+
+    return render_template(
+        "flashcards.html",
+        bundle=bundle,
+        cards=cards,
+        topics=topics,
+        difficulties=difficulties,
+        skill_types=skill_types,
     )
 
-    revision_plan = build_revision_plan(bundle, submission)
-    return _render_result(bundle, revision_plan=revision_plan, submission=submission)
+
+@app.route("/notes/<slug>")
+def notes(slug: str) -> str:
+    bundle = BUNDLE_CACHE.get(slug)
+    materials = STUDY_CACHE.get(slug)
+    if not bundle or not materials:
+        flash("Notes are unavailable for this session. Generate a new paper to try again.", "error")
+        return redirect(url_for("index"))
+
+    return render_template(
+        "notes.html",
+        bundle=bundle,
+        notes=materials.notes,
+    )
+
+
+@app.route("/resources/<slug>")
+def resources(slug: str) -> str:
+    bundle = BUNDLE_CACHE.get(slug)
+    materials = STUDY_CACHE.get(slug)
+    if not bundle or not materials:
+        flash("Resources are unavailable for this session. Generate a new paper to try again.", "error")
+        return redirect(url_for("index"))
+
+    groups: dict[str, list[dict]] = {}
+    for item in materials.resources:
+        groups.setdefault(item.topic, []).append(asdict(item))
+
+    grouped = [
+        {
+            "topic": topic,
+            "items": sorted(items, key=lambda entry: entry["type"]),
+        }
+        for topic, items in sorted(groups.items())
+    ]
+
+    return render_template(
+        "resources.html",
+        bundle=bundle,
+        groups=grouped,
+    )
 
 
 @app.route("/download/<path:filename>")
@@ -103,8 +155,6 @@ def _choice_pairs(options: dict[str, str]) -> list[tuple[str, str]]:
 
 def _render_result(
     bundle: PaperBundle,
-    revision_plan=None,
-    submission: ReflectionSubmission | None = None,
 ) -> str:
     questions = list(bundle.questions)
     mark_scheme = list(bundle.mark_scheme)
@@ -115,8 +165,6 @@ def _render_result(
         mark_scheme=mark_scheme,
         paper_url=url_for("download_file", filename=bundle.paper_pdf.name),
         scheme_url=url_for("download_file", filename=bundle.mark_scheme_pdf.name),
-        revision_plan=revision_plan,
-        submission=submission,
     )
 
 

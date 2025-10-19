@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Summary Notes · AFE Study Suite{% endblock %}
+{% block content %}
+<section class="notes-layout">
+  <aside class="notes-toc" aria-label="Topics">
+    <h2>Topics</h2>
+    <nav>
+      <ul>
+        {% for section in notes %}
+        <li><a href="#note-{{ loop.index }}">{{ section.topic }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </aside>
+  <div class="notes-main">
+    <div class="notes-toolbar">
+      <button class="button button--secondary" type="button" data-action="reveal-all">Reveal all answers</button>
+      <button class="button button--secondary" type="button" data-action="print">Print</button>
+      <label class="copy-control">
+        <span>Copy section</span>
+        <select id="copy-select">
+          {% for section in notes %}
+          <option value="note-{{ loop.index }}">{{ section.topic }}</option>
+          {% endfor %}
+        </select>
+        <button class="button button--secondary" type="button" data-action="copy">Copy</button>
+      </label>
+    </div>
+    {% for section in notes %}
+    <article class="notes-card" id="note-{{ loop.index }}" data-topic="{{ section.topic }}">
+      <header class="notes-card__header">
+        <h2>{{ section.topic }}</h2>
+        <span class="badge">{{ section.skill_focus }}</span>
+      </header>
+      <section class="note-block note-block--key">
+        <h3>Key idea</h3>
+        <p>{{ section.key_idea }}</p>
+      </section>
+      {% if section.formulas %}
+      <section class="note-block">
+        <h3>Formula / definition</h3>
+        <ul class="note-list {% if section.monospaced_formulas %}note-list--mono{% endif %}">
+          {% for formula in section.formulas %}
+          <li>{{ formula }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+      <section class="note-block">
+        <h3>Mini-example</h3>
+        <p class="note-block__setup">{{ section.mini_example_setup }}</p>
+        <ol class="note-steps">
+          {% for step in section.mini_example_steps %}
+          <li>{{ step }}</li>
+          {% endfor %}
+        </ol>
+      </section>
+      <section class="note-block note-block--warning">
+        <h3>Common traps</h3>
+        <ul class="note-list">
+          {% for trap in section.common_traps %}
+          <li>{{ trap }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="note-block note-block--checks">
+        <h3>Quick checks</h3>
+        <ul class="quick-checks">
+          {% for check in section.quick_checks %}
+          <li>
+            <button type="button" class="quick-checks__prompt" data-answer="qc-{{ loop.parentloop.index }}-{{ loop.index }}">{{ check.prompt }}</button>
+            <span class="quick-checks__answer" id="qc-{{ loop.parentloop.index }}-{{ loop.index }}" hidden>{{ check.answer }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% if section.anchor_problem %}
+      <section class="note-block note-block--anchor">
+        <h3>Anchor problem (2–4 marks)</h3>
+        <p class="note-block__setup">{{ section.anchor_problem }}</p>
+        {% if section.anchor_solution %}
+        <button type="button" class="button button--secondary" data-answer="anchor-{{ loop.index }}">Reveal worked answer</button>
+        <div class="anchor-answer" id="anchor-{{ loop.index }}" hidden>{{ section.anchor_solution }}</div>
+        {% endif %}
+      </section>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='notes.js') }}"></script>
+{% endblock %}

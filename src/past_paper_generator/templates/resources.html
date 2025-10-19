@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Resource Hub · AFE Study Suite{% endblock %}
+{% block content %}
+<section class="card resources" data-storage-key="afe-resources-{{ bundle.slug }}">
+  <header class="resources__header">
+    <div>
+      <h2>Resource hub</h2>
+      <p class="resources__subtitle">High-impact follow-up materials grouped by topic.</p>
+    </div>
+    <div class="resources__actions">
+      <button class="button button--secondary" type="button" data-action="toggle-save">Save to Library</button>
+      <button class="button button--secondary" type="button" data-action="open-all">Open all links</button>
+    </div>
+  </header>
+  <div class="resource-groups" id="resource-groups">
+    {% for group in groups %}
+    <article class="resource-group" data-topic="{{ group.topic }}">
+      <button class="resource-group__toggle" type="button" data-topic="{{ group.topic }}">{{ group.topic }}</button>
+      <div class="resource-group__body" hidden>
+        <ul>
+          {% for item in group.items %}
+          <li class="resource-item" data-kind="{{ item.type }}" data-link="{{ item.link_or_query }}">
+            <span class="resource-item__badge">{{ item.type }}</span>
+            <div class="resource-item__content">
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.why_this }}</p>
+              <small>Estimated time: {{ item.est_time_min }} mins</small>
+              {% if item.link_or_query.startswith('http') %}
+              <a class="button button--secondary" href="{{ item.link_or_query }}" target="_blank" rel="noopener">Open link</a>
+              {% else %}
+              <button type="button" class="button button--secondary" data-query="{{ item.link_or_query }}">Search</button>
+              {% endif %}
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='resources.js') }}"></script>
+{% endblock %}
