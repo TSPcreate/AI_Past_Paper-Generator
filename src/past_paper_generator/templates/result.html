@@ -84,6 +84,13 @@
 <section class="study-suite">
   <h3>Continue with AFE study tools</h3>
   <p class="study-suite__intro">Move from practice to mastery with adaptive flashcards, concise notes and curated resources.</p>
+  <div class="llm-status">
+    {% if llm_key_tail %}
+    <span class="llm-status__pill llm-status__pill--active">LLM key synced for this session (••••{{ llm_key_tail }})</span>
+    {% else %}
+    <span class="llm-status__pill llm-status__pill--missing">Add your LLM key on the generator form to unlock AI-assisted study helpers.</span>
+    {% endif %}
+  </div>
   <div class="study-suite__grid">
     <article class="study-card">
       <h4>Flashcard review</h4>

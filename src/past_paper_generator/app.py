@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 
 from flask import (
     Flask,
@@ -14,6 +15,7 @@ from flask import (
     render_template,
     request,
     send_file,
+    session,
     url_for,
 )
 
@@ -25,6 +27,7 @@ from .schemas import (
     ALLOWED_TIERS,
     GenerationParams,
     PaperBundle,
+    StudyMaterials,
     ValidationError,
 )
 from .study import build_study_materials
@@ -39,17 +42,47 @@ app = Flask(
 app.secret_key = "change-me"
 service = PastPaperService()
 BUNDLE_CACHE: dict[str, PaperBundle] = {}
-STUDY_CACHE = {}
+STUDY_CACHE: dict[str, "StudySessionRecord"] = {}
+
+
+@dataclass(slots=True)
+class ReflectionEntry:
+    """A captured learner reflection for a study session."""
+
+    text: str
+    created: datetime
+
+    @property
+    def iso(self) -> str:
+        return self.created.isoformat(timespec="seconds")
+
+    @property
+    def human(self) -> str:
+        return self.created.strftime("%d %b %Y · %H:%M")
+
+
+@dataclass(slots=True)
+class StudySessionRecord:
+    """Cached study materials enriched with session metadata."""
+
+    materials: StudyMaterials
+    llm_key: str | None = None
+    reflections: list[ReflectionEntry] = field(default_factory=list)
+
+    def add_reflection(self, note: str) -> None:
+        self.reflections.insert(0, ReflectionEntry(text=note, created=datetime.utcnow()))
 
 
 @app.route("/", methods=["GET"])
 def index() -> str:
+    llm_key = session.get("llm_api_key")
     return render_template(
         "index.html",
         subjects=_choice_pairs(ALLOWED_SUBJECTS),
         exam_boards=_choice_pairs(ALLOWED_EXAM_BOARDS),
         tiers=_choice_pairs(ALLOWED_TIERS),
         difficulties=_choice_pairs(ALLOWED_DIFFICULTIES),
+        llm_key_tail=_mask_key(llm_key),
     )
 
 
@@ -69,18 +102,28 @@ def generate() -> str:
 
     bundle = service.generate(params, output_dir=OUTPUT_DIR)
     BUNDLE_CACHE[bundle.slug] = bundle
-    STUDY_CACHE[bundle.slug] = build_study_materials(bundle)
+    llm_key = request.form.get("llm_api_key", "").strip()
+    if llm_key:
+        session["llm_api_key"] = llm_key
+    else:
+        llm_key = session.get("llm_api_key")
+
+    STUDY_CACHE[bundle.slug] = StudySessionRecord(
+        materials=build_study_materials(bundle),
+        llm_key=llm_key,
+    )
     return _render_result(bundle)
 
 
 @app.route("/flashcards/<slug>")
 def flashcards(slug: str) -> str:
     bundle = BUNDLE_CACHE.get(slug)
-    materials = STUDY_CACHE.get(slug)
-    if not bundle or not materials:
+    record = STUDY_CACHE.get(slug)
+    if not bundle or not record:
         flash("That study session has expired. Generate a fresh paper to continue.", "error")
         return redirect(url_for("index"))
 
+    materials = record.materials
     cards = [asdict(card) for card in materials.flashcards]
     topics = sorted({card["topic"] for card in cards})
     difficulties = sorted({card["difficulty"] for card in cards})
@@ -93,34 +136,39 @@ def flashcards(slug: str) -> str:
         topics=topics,
         difficulties=difficulties,
         skill_types=skill_types,
+        llm_key=record.llm_key or session.get("llm_api_key"),
+        llm_key_tail=_mask_key(record.llm_key or session.get("llm_api_key")),
     )
 
 
 @app.route("/notes/<slug>")
 def notes(slug: str) -> str:
     bundle = BUNDLE_CACHE.get(slug)
-    materials = STUDY_CACHE.get(slug)
-    if not bundle or not materials:
+    record = STUDY_CACHE.get(slug)
+    if not bundle or not record:
         flash("Notes are unavailable for this session. Generate a new paper to try again.", "error")
         return redirect(url_for("index"))
 
     return render_template(
         "notes.html",
         bundle=bundle,
-        notes=materials.notes,
+        notes=record.materials.notes,
+        reflections=record.reflections,
+        llm_key=record.llm_key or session.get("llm_api_key"),
+        llm_key_tail=_mask_key(record.llm_key or session.get("llm_api_key")),
     )
 
 
 @app.route("/resources/<slug>")
 def resources(slug: str) -> str:
     bundle = BUNDLE_CACHE.get(slug)
-    materials = STUDY_CACHE.get(slug)
-    if not bundle or not materials:
+    record = STUDY_CACHE.get(slug)
+    if not bundle or not record:
         flash("Resources are unavailable for this session. Generate a new paper to try again.", "error")
         return redirect(url_for("index"))
 
     groups: dict[str, list[dict]] = {}
-    for item in materials.resources:
+    for item in record.materials.resources:
         groups.setdefault(item.topic, []).append(asdict(item))
 
     grouped = [
@@ -135,7 +183,27 @@ def resources(slug: str) -> str:
         "resources.html",
         bundle=bundle,
         groups=grouped,
+        llm_key=record.llm_key or session.get("llm_api_key"),
+        llm_key_tail=_mask_key(record.llm_key or session.get("llm_api_key")),
     )
+
+
+@app.route("/reflection/<slug>", methods=["POST"])
+def add_reflection(slug: str) -> str:
+    bundle = BUNDLE_CACHE.get(slug)
+    record = STUDY_CACHE.get(slug)
+    if not bundle or not record:
+        flash("That study session has expired. Generate a fresh paper to continue.", "error")
+        return redirect(url_for("index"))
+
+    note = (request.form.get("reflection", "") or "").strip()
+    if not note:
+        flash("Reflection notes cannot be empty.", "error")
+        return redirect(url_for("notes", slug=slug) + "#reflection-journal")
+
+    record.add_reflection(note)
+    flash("Reflection saved.", "success")
+    return redirect(url_for("notes", slug=slug) + "#reflection-journal")
 
 
 @app.route("/download/<path:filename>")
@@ -165,8 +233,18 @@ def _render_result(
         mark_scheme=mark_scheme,
         paper_url=url_for("download_file", filename=bundle.paper_pdf.name),
         scheme_url=url_for("download_file", filename=bundle.mark_scheme_pdf.name),
+        llm_key_tail=_mask_key(session.get("llm_api_key")),
     )
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+def _mask_key(value: str | None) -> str:
+    if not value:
+        return ""
+    trimmed = value.strip()
+    if len(trimmed) <= 4:
+        return trimmed
+    return trimmed[-4:]

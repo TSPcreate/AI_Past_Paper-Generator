@@ -46,6 +46,15 @@
         <span class="form-label">Number of questions</span>
         <input type="number" name="num_questions" min="1" max="30" value="10" required>
       </label>
+      <label class="form-field">
+        <span class="form-label">LLM API key <span class="form-label__optional">(optional)</span></span>
+        <input type="password" name="llm_api_key" placeholder="sk-..." autocomplete="off">
+        {% if llm_key_tail %}
+        <small class="form-hint form-hint--success">Current key saved (••••{{ llm_key_tail }})</small>
+        {% else %}
+        <small class="form-hint">Stored securely for this browser session to power study helpers.</small>
+        {% endif %}
+      </label>
     </div>
     <button class="button" type="submit">Generate paper</button>
   </form>
