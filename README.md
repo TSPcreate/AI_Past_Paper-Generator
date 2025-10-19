@@ -8,6 +8,8 @@ An end-to-end demo that produces GCSE-style exam papers and mark schemes from si
 - **LLM-ready orchestration** – swap in your preferred LLM provider while keeping prompt/response handling deterministic for tests.
 - **Styled PDFs** – ReportLab layouts for both the exam paper and the accompanying mark scheme.
 - **Modern frontend** – responsive design, summary tables and quick download actions.
+- **Exam logistics** – each question includes total marks, recommended timing, skill focus and specification references.
+- **Reflection workflow** – log weaknesses to instantly generate flashcards, summary notes and curated resource links.
 
 ## Project layout
 
@@ -69,6 +71,7 @@ Generated PDFs are stored inside the `outputs/` directory. Use the download butt
 - Update the question templates inside `llm_stub.py` to expand topic coverage or supply real prompt/response examples.
 - Adjust typography, colours or layout by editing `static/styles.css` and the templates inside `templates/`.
 - Modify `pdf.py` to incorporate branding, logos or multi-column mark schemes.
+- Extend `revision.py` to integrate real analytics, progress tracking or spaced-repetition tooling.
 
 ## Testing the core service
 

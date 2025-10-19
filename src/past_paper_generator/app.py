@@ -4,15 +4,26 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Flask, abort, flash, redirect, render_template, request, send_file, url_for
+from flask import (
+    Flask,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
 
 from .generator import PastPaperService
+from .revision import ReflectionSubmission, build_revision_plan
 from .schemas import (
     ALLOWED_DIFFICULTIES,
     ALLOWED_EXAM_BOARDS,
     ALLOWED_SUBJECTS,
     ALLOWED_TIERS,
     GenerationParams,
+    PaperBundle,
     ValidationError,
 )
 
@@ -25,6 +36,7 @@ app = Flask(
 )
 app.secret_key = "change-me"
 service = PastPaperService()
+BUNDLE_CACHE: dict[str, PaperBundle] = {}
 
 
 @app.route("/", methods=["GET"])
@@ -53,17 +65,25 @@ def generate() -> str:
         return redirect(url_for("index"))
 
     bundle = service.generate(params, output_dir=OUTPUT_DIR)
-    questions = list(bundle.questions)
-    mark_scheme = list(bundle.mark_scheme)
+    BUNDLE_CACHE[bundle.slug] = bundle
+    return _render_result(bundle)
 
-    return render_template(
-        "result.html",
-        bundle=bundle,
-        questions=questions,
-        mark_scheme=mark_scheme,
-        paper_url=url_for("download_file", filename=bundle.paper_pdf.name),
-        scheme_url=url_for("download_file", filename=bundle.mark_scheme_pdf.name),
+
+@app.route("/reflect/<slug>", methods=["POST"])
+def reflect(slug: str) -> str:
+    bundle = BUNDLE_CACHE.get(slug)
+    if bundle is None:
+        flash("Session expired. Regenerate the paper to submit reflections.", "error")
+        return redirect(url_for("index"))
+
+    submission = ReflectionSubmission(
+        weaknesses=request.form.get("weaknesses", ""),
+        reflection=request.form.get("reflection", ""),
+        improvements=request.form.get("improvements", ""),
     )
+
+    revision_plan = build_revision_plan(bundle, submission)
+    return _render_result(bundle, revision_plan=revision_plan, submission=submission)
 
 
 @app.route("/download/<path:filename>")
@@ -79,6 +99,25 @@ def download_file(filename: str):
 
 def _choice_pairs(options: dict[str, str]) -> list[tuple[str, str]]:
     return [(key, label) for key, label in sorted(options.items(), key=lambda item: item[1])]
+
+
+def _render_result(
+    bundle: PaperBundle,
+    revision_plan=None,
+    submission: ReflectionSubmission | None = None,
+) -> str:
+    questions = list(bundle.questions)
+    mark_scheme = list(bundle.mark_scheme)
+    return render_template(
+        "result.html",
+        bundle=bundle,
+        questions=questions,
+        mark_scheme=mark_scheme,
+        paper_url=url_for("download_file", filename=bundle.paper_pdf.name),
+        scheme_url=url_for("download_file", filename=bundle.mark_scheme_pdf.name),
+        revision_plan=revision_plan,
+        submission=submission,
+    )
 
 
 if __name__ == "__main__":

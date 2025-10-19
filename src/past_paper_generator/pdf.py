@@ -18,23 +18,23 @@ def build_exam_pdf(path: Path, params: GenerationParams, questions: Sequence[Que
 
     doc = SimpleDocTemplate(str(path), pagesize=A4, rightMargin=36, leftMargin=36, topMargin=54, bottomMargin=36)
     styles = _styles()
+    total_marks = sum(question.marks for question in questions)
+    total_minutes = sum(question.recommended_time_minutes for question in questions)
     story = [
         Paragraph("GCSE Past Paper", styles["title"]),
         Spacer(1, 12),
         Paragraph(_metadata_line(params), styles["metadata"]),
-        Spacer(1, 24),
+        Spacer(1, 6),
+        Paragraph(
+            f"Total marks: {total_marks} | Recommended duration: {total_minutes} minutes",
+            styles["metadata"],
+        ),
+        Spacer(1, 18),
     ]
 
     for question in questions:
-        story.extend(
-            [
-                Paragraph(f"Question {question.number} - {question.topic}", styles["question_heading"]),
-                Paragraph(f"Marks: {question.marks} | Difficulty: {question.difficulty}", styles["metadata"]),
-                Spacer(1, 6),
-                Paragraph(question.prompt, styles["body"]),
-                Spacer(1, 18),
-            ]
-        )
+        story.extend(_exam_question_block(question, styles))
+        story.append(Spacer(1, 18))
 
     doc.build(story)
     return path
@@ -51,6 +51,11 @@ def build_mark_scheme_pdf(path: Path, params: GenerationParams, entries: Sequenc
         Paragraph("GCSE Mark Scheme", styles["title"]),
         Spacer(1, 6),
         Paragraph(_metadata_line(params), styles["metadata"]),
+        Spacer(1, 6),
+        Paragraph(
+            "Reward evidence-based reasoning and quote accurate terminology for full credit.",
+            styles["metadata"],
+        ),
         Spacer(1, 18),
     ]
 
@@ -119,6 +124,26 @@ def _styles() -> dict[str, ParagraphStyle]:
             alignment=1,
             textColor=colors.white,
         ),
+        "meta_label": ParagraphStyle(
+            "MetaLabel",
+            parent=base["BodyText"],
+            fontSize=9,
+            textColor=colors.HexColor("#3a506b"),
+        ),
+        "meta_value": ParagraphStyle(
+            "MetaValue",
+            parent=base["BodyText"],
+            fontSize=10,
+            textColor=colors.HexColor("#102a43"),
+            leading=13,
+        ),
+        "guidance": ParagraphStyle(
+            "GuidanceBody",
+            parent=base["BodyText"],
+            fontSize=10,
+            textColor=colors.HexColor("#243b53"),
+            leading=14,
+        ),
         "table_header": ParagraphStyle(
             "TableHeader",
             parent=base["BodyText"],
@@ -141,6 +166,51 @@ def _metadata_line(params: GenerationParams) -> str:
         f"Subject: {params.subject.title()} | Exam board: {params.exam_board.upper()} | "
         f"Tier: {params.tier.title()} | Difficulty: {params.difficulty.title()}"
     )
+
+
+def _exam_question_block(question: Question, styles: dict[str, ParagraphStyle]) -> list:
+    meta_table = Table(
+        [
+            [
+                Paragraph("Marks", styles["meta_label"]),
+                Paragraph(str(question.marks), styles["meta_value"]),
+                Paragraph("Time", styles["meta_label"]),
+                Paragraph(f"{question.recommended_time_minutes} min", styles["meta_value"]),
+            ],
+            [
+                Paragraph("Skill focus", styles["meta_label"]),
+                Paragraph(question.skill_focus, styles["meta_value"]),
+                Paragraph("Strategy", styles["meta_label"]),
+                Paragraph(question.strategy, styles["meta_value"]),
+            ],
+            [
+                Paragraph("Guidance", styles["meta_label"]),
+                Paragraph(question.guidance, styles["guidance"]),
+                Paragraph("Spec ref", styles["meta_label"]),
+                Paragraph(question.syllabus_reference, styles["meta_value"]),
+            ],
+        ],
+        colWidths=[70, 190, 70, 190],
+        hAlign="LEFT",
+    )
+    meta_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f0f4f8")),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#d9e2ec")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#d9e2ec")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
+
+    heading = Paragraph(f"Question {question.number}: {question.topic}", styles["question_heading"])
+    prompt = Paragraph(question.prompt, styles["body"])
+    return [heading, meta_table, Spacer(1, 6), prompt]
 
 
 def _branding_banner(styles: dict[str, ParagraphStyle]) -> Table:
@@ -196,22 +266,35 @@ def _mark_scheme_section(entry: MarkSchemeEntry, styles: dict[str, ParagraphStyl
 
     panel_rows = [
         [
-            Paragraph("<b>Marking guidance</b>", styles["table_header"]),
-            Paragraph("<b>Additional guidance</b>", styles["table_header"]),
+            Paragraph("Response outline", styles["table_header"]),
+            Paragraph(entry.answer, styles["body"]),
         ],
         [
-            Paragraph(entry.answer, styles["body"]),
-            Paragraph(entry.notes or "Use teacher discretion for alternative valid methods.", styles["notes_body"]),
+            Paragraph("Method steps", styles["table_header"]),
+            Paragraph(entry.method_breakdown, styles["notes_body"]),
+        ],
+        [
+            Paragraph("Common slips", styles["table_header"]),
+            Paragraph(entry.common_pitfalls, styles["notes_body"]),
+        ],
+        [
+            Paragraph("Examiner notes", styles["table_header"]),
+            Paragraph(entry.examiner_notes, styles["notes_body"]),
+        ],
+        [
+            Paragraph("Tier reminder", styles["table_header"]),
+            Paragraph(entry.notes or "Offer scaffolding for partial understanding.", styles["notes_body"]),
         ],
     ]
 
-    panel = Table(panel_rows, colWidths=[360, 120])
+    panel = Table(panel_rows, colWidths=[150, 330])
     panel.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#edf2f7")),
-                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#9fb3c8")),
-                ("LINEBEFORE", (1, 1), (1, 1), 0.5, colors.HexColor("#d9e2ec")),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#d9e2ec")),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#9fb3c8")),
+                ("LINEABOVE", (0, 1), (-1, -1), 0.3, colors.HexColor("#bcccdc")),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("LEFTPADDING", (0, 0), (-1, -1), 10),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 10),

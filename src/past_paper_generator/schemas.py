@@ -88,13 +88,19 @@ class GenerationParams:
 
 @dataclass(slots=True)
 class Question:
-    """Represents an exam question."""
+    """Represents an exam question with learning logistics."""
 
     number: int
     prompt: str
     marks: int
     topic: str
     difficulty: str
+    recommended_time_minutes: int
+    skill_focus: str
+    strategy: str
+    guidance: str
+    syllabus_reference: str
+    resources: tuple[str, ...] = ()
 
 
 @dataclass(slots=True)
@@ -104,7 +110,47 @@ class MarkSchemeEntry:
     number: int
     answer: str
     marks: int
+    method_breakdown: str
+    common_pitfalls: str
+    examiner_notes: str
     notes: str | None = None
+
+
+@dataclass(slots=True)
+class RevisionFlashcard:
+    """A targeted flashcard generated after learner reflection."""
+
+    topic: str
+    front: str
+    back: str
+
+
+@dataclass(slots=True)
+class ResourceLink:
+    """Reference material to deepen understanding of a weak area."""
+
+    title: str
+    url: str
+    description: str
+
+
+@dataclass(slots=True)
+class RevisionNote:
+    """Concise summary notes keyed to a specific misconception."""
+
+    heading: str
+    bullet_points: tuple[str, ...]
+
+
+@dataclass(slots=True)
+class RevisionPlan:
+    """Structured plan returned after the learner submits reflections."""
+
+    focus_topics: tuple[str, ...]
+    flashcards: tuple[RevisionFlashcard, ...]
+    notes: tuple[RevisionNote, ...]
+    resources: tuple[ResourceLink, ...]
+    next_steps: tuple[str, ...]
 
 
 @dataclass(slots=True)
@@ -116,6 +162,9 @@ class PaperBundle:
     mark_scheme: Sequence[MarkSchemeEntry]
     paper_pdf: Path
     mark_scheme_pdf: Path
+    slug: str
+    total_marks: int
+    estimated_duration_minutes: int
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 

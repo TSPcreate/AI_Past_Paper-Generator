@@ -17,6 +17,8 @@
     <div><dt>Tier</dt><dd>{{ bundle.params.tier|title }}</dd></div>
     <div><dt>Difficulty</dt><dd>{{ bundle.params.difficulty|title }}</dd></div>
     <div><dt>Questions</dt><dd>{{ questions|length }}</dd></div>
+    <div><dt>Total marks</dt><dd>{{ bundle.total_marks }}</dd></div>
+    <div><dt>Recommended duration</dt><dd>{{ bundle.estimated_duration_minutes }} mins</dd></div>
   </dl>
 </section>
 <section class="table-section">
@@ -30,6 +32,9 @@
           <th>Question</th>
           <th>Marks</th>
           <th>Difficulty</th>
+          <th>Time (mins)</th>
+          <th>Skill focus</th>
+          <th>Strategy</th>
         </tr>
       </thead>
       <tbody>
@@ -40,6 +45,9 @@
           <td>{{ question.prompt }}</td>
           <td>{{ question.marks }}</td>
           <td>{{ question.difficulty }}</td>
+          <td>{{ question.recommended_time_minutes }}</td>
+          <td>{{ question.skill_focus }}</td>
+          <td>{{ question.strategy }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -55,7 +63,8 @@
           <th>No.</th>
           <th>Answer outline</th>
           <th>Marks</th>
-          <th>Notes</th>
+          <th>Method steps</th>
+          <th>Examiner notes</th>
         </tr>
       </thead>
       <tbody>
@@ -64,13 +73,83 @@
           <td>{{ entry.number }}</td>
           <td>{{ entry.answer }}</td>
           <td>{{ entry.marks }}</td>
-          <td>{{ entry.notes or '—' }}</td>
+          <td>{{ entry.method_breakdown }}</td>
+          <td>{{ entry.examiner_notes }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </section>
+<section class="reflection" id="reflection">
+  <h3>Reflect &amp; rebuild</h3>
+  <p>Log your trickiest areas so AFE can craft flashcards, summary notes and follow-up resources.</p>
+  <form class="reflection-form" action="{{ url_for('reflect', slug=bundle.slug) }}" method="post">
+    <label class="form-field">
+      <span class="form-label">Topics or questions you struggled with</span>
+      <textarea name="weaknesses" rows="3" required>{{ submission.weaknesses if submission else '' }}</textarea>
+    </label>
+    <label class="form-field">
+      <span class="form-label">What went well / what held you back?</span>
+      <textarea name="reflection" rows="3">{{ submission.reflection if submission else '' }}</textarea>
+    </label>
+    <label class="form-field">
+      <span class="form-label">Next steps you'd like to take</span>
+      <textarea name="improvements" rows="3">{{ submission.improvements if submission else '' }}</textarea>
+    </label>
+    <button class="button" type="submit">Build revision pack</button>
+  </form>
+</section>
+{% if revision_plan %}
+<section class="plan" id="revision-plan">
+  <h3>Personalised revision pack</h3>
+  <article class="plan__summary">
+    <h4>Focus topics</h4>
+    <p>{{ revision_plan.focus_topics|join(', ') }}</p>
+  </article>
+  <div class="plan__grid">
+    <article class="plan__column">
+      <h4>Flashcards</h4>
+      <ul>
+        {% for card in revision_plan.flashcards %}
+        <li>
+          <strong>{{ card.topic }}</strong><br>
+          <span class="flashcard-front">{{ card.front }}</span><br>
+          <span class="flashcard-back">{{ card.back }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </article>
+    <article class="plan__column">
+      <h4>Summary notes</h4>
+      {% for note in revision_plan.notes %}
+      <div class="note">
+        <strong>{{ note.heading }}</strong>
+        <ul>
+          {% for point in note.bullet_points %}
+          <li>{{ point }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </article>
+    <article class="plan__column">
+      <h4>Resources</h4>
+      <ul>
+        {% for resource in revision_plan.resources %}
+        <li><a href="{{ resource.url }}" target="_blank" rel="noopener">{{ resource.title }}</a><br><span>{{ resource.description }}</span></li>
+        {% endfor %}
+      </ul>
+      <h4>Next steps</h4>
+      <ol>
+        {% for step in revision_plan.next_steps %}
+        <li>{{ step }}</li>
+        {% endfor %}
+      </ol>
+    </article>
+  </div>
+</section>
+{% endif %}
 <section class="cta">
   <a class="button" href="{{ url_for('index') }}">Create another paper</a>
 </section>
