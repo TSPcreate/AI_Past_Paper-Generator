@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Resource Hub · AFE Study Suite{% endblock %}
 {% block content %}
-<section class="card resources" data-storage-key="afe-resources-{{ bundle.slug }}">
+<section class="card resources" data-storage-key="afe-resources-{{ bundle.slug }}" data-llm-key="{{ llm_key or '' }}">
   <header class="resources__header">
     <div>
       <h2>Resource hub</h2>
@@ -12,6 +12,15 @@
       <button class="button button--secondary" type="button" data-action="open-all">Open all links</button>
     </div>
   </header>
+  <div class="llm-status">
+    <span class="llm-status__pill {% if llm_key_tail %}llm-status__pill--active{% else %}llm-status__pill--missing{% endif %}" id="llm-status-pill">
+      {% if llm_key_tail %}
+      LLM key synced (••••{{ llm_key_tail }})
+      {% else %}
+      Add your LLM key on the generator page to enable AI enhancements.
+      {% endif %}
+    </span>
+  </div>
   <div class="resource-groups" id="resource-groups">
     {% for group in groups %}
     <article class="resource-group" data-topic="{{ group.topic }}">

@@ -1,4 +1,8 @@
 (function () {
+  const layout = document.querySelector('.notes-layout');
+  const statusEl = document.getElementById('llm-status-pill');
+  syncLLMKey(layout, statusEl);
+
   const revealButton = document.querySelector('[data-action="reveal-all"]');
   const printButton = document.querySelector('[data-action="print"]');
   const copyButton = document.querySelector('[data-action="copy"]');
@@ -86,5 +90,37 @@
   }
   if (copyButton) {
     copyButton.addEventListener('click', onCopy);
+  }
+
+  function syncLLMKey(element, statusElement) {
+    if (!element) {
+      return '';
+    }
+    let key = element.dataset.llmKey || '';
+    try {
+      const stored = localStorage.getItem('afe-llm-key');
+      if (key) {
+        localStorage.setItem('afe-llm-key', key);
+      } else if (stored) {
+        key = stored;
+        element.dataset.llmKey = stored;
+      }
+    } catch (error) {
+      console.warn('Unable to access localStorage for LLM key', error);
+    }
+
+    if (statusElement) {
+      if (key) {
+        statusElement.textContent = `LLM key synced (••••${key.slice(-4)})`;
+        statusElement.classList.add('llm-status__pill--active');
+        statusElement.classList.remove('llm-status__pill--missing');
+      } else {
+        statusElement.textContent = 'Add your LLM key on the generator page to enable AI enhancements.';
+        statusElement.classList.remove('llm-status__pill--active');
+        statusElement.classList.add('llm-status__pill--missing');
+      }
+    }
+
+    return key;
   }
 })();

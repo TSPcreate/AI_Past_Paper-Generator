@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Summary Notes · AFE Study Suite{% endblock %}
 {% block content %}
-<section class="notes-layout">
+<section class="notes-layout" data-llm-key="{{ llm_key or '' }}">
   <aside class="notes-toc" aria-label="Topics">
     <h2>Topics</h2>
     <nav>
@@ -25,6 +25,15 @@
         </select>
         <button class="button button--secondary" type="button" data-action="copy">Copy</button>
       </label>
+    </div>
+    <div class="llm-status">
+      <span class="llm-status__pill {% if llm_key_tail %}llm-status__pill--active{% else %}llm-status__pill--missing{% endif %}" id="llm-status-pill">
+        {% if llm_key_tail %}
+        LLM key synced (••••{{ llm_key_tail }})
+        {% else %}
+        Add your LLM key on the generator page to enable AI enhancements.
+        {% endif %}
+      </span>
     </div>
     {% for section in notes %}
     <article class="notes-card" id="note-{{ loop.index }}" data-topic="{{ section.topic }}">
@@ -86,6 +95,28 @@
       {% endif %}
     </article>
     {% endfor %}
+    <section class="card reflection-card" id="reflection-journal">
+      <h2>Reflection journal</h2>
+      <form class="reflection-form" action="{{ url_for('add_reflection', slug=bundle.slug) }}" method="post">
+        <label for="reflection-text" class="sr-only">Reflection notes</label>
+        <textarea id="reflection-text" name="reflection" rows="4" placeholder="What clicked today? What needs another look?" required></textarea>
+        <div class="reflection-actions">
+          <button class="button" type="submit">Save reflection</button>
+        </div>
+      </form>
+      {% if reflections %}
+      <ul class="reflection-list">
+        {% for entry in reflections %}
+        <li>
+          <time datetime="{{ entry.iso }}">{{ entry.human }}</time>
+          <p>{{ entry.text }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="reflection-empty">Capture quick takeaways or lingering questions after your revision session.</p>
+      {% endif %}
+    </section>
   </div>
 </section>
 {% endblock %}
