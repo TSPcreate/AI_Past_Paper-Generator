@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Your paper is ready · GCSE Past Paper Generator{% endblock %}
+{% block content %}
+<section class="card">
+  <h2 class="card__title">Your bespoke paper is ready</h2>
+  <p class="card__description">Download the PDF files or review the generated content below.</p>
+  <div class="download-actions">
+    <a class="button" href="{{ paper_url }}">Download paper</a>
+    <a class="button button--secondary" href="{{ scheme_url }}">Download mark scheme</a>
+  </div>
+</section>
+<section class="summary">
+  <h3>Summary</h3>
+  <dl class="summary-grid">
+    <div><dt>Subject</dt><dd>{{ bundle.params.subject|title }}</dd></div>
+    <div><dt>Exam board</dt><dd>{{ bundle.params.exam_board|upper }}</dd></div>
+    <div><dt>Tier</dt><dd>{{ bundle.params.tier|title }}</dd></div>
+    <div><dt>Difficulty</dt><dd>{{ bundle.params.difficulty|title }}</dd></div>
+    <div><dt>Questions</dt><dd>{{ questions|length }}</dd></div>
+    <div><dt>Total marks</dt><dd>{{ bundle.total_marks }}</dd></div>
+    <div><dt>Recommended duration</dt><dd>{{ bundle.estimated_duration_minutes }} mins</dd></div>
+  </dl>
+</section>
+<section class="table-section">
+  <h3>Questions</h3>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Topic</th>
+          <th>Question</th>
+          <th>Marks</th>
+          <th>Difficulty</th>
+          <th>Time (mins)</th>
+          <th>Skill focus</th>
+          <th>Strategy</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for question in questions %}
+        <tr>
+          <td>{{ question.number }}</td>
+          <td>{{ question.topic }}</td>
+          <td>{{ question.prompt }}</td>
+          <td>{{ question.marks }}</td>
+          <td>{{ question.difficulty }}</td>
+          <td>{{ question.recommended_time_minutes }}</td>
+          <td>{{ question.skill_focus }}</td>
+          <td>{{ question.strategy }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<section class="table-section">
+  <h3>Mark scheme</h3>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Answer outline</th>
+          <th>Marks</th>
+          <th>Method steps</th>
+          <th>Examiner notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in mark_scheme %}
+        <tr>
+          <td>{{ entry.number }}</td>
+          <td>{{ entry.answer }}</td>
+          <td>{{ entry.marks }}</td>
+          <td>{{ entry.method_breakdown }}</td>
+          <td>{{ entry.examiner_notes }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<section class="study-suite">
+  <h3>Continue with AFE study tools</h3>
+  <p class="study-suite__intro">Move from practice to mastery with adaptive flashcards, concise notes and curated resources.</p>
+  <div class="study-suite__grid">
+    <article class="study-card">
+      <h4>Flashcard review</h4>
+      <p>Flip through spaced-repetition cards with hints, streak tracking and light SRS scheduling.</p>
+      <a class="button" href="{{ url_for('flashcards', slug=bundle.slug) }}">Start reviewing</a>
+    </article>
+    <article class="study-card">
+      <h4>Summary notes</h4>
+      <p>Skim micro-notes with revealable checks, mini examples and print-ready layouts per topic.</p>
+      <a class="button" href="{{ url_for('notes', slug=bundle.slug) }}">Open notes</a>
+    </article>
+    <article class="study-card">
+      <h4>Resource hub</h4>
+      <p>Launch high-impact follow-up resources and smart search prompts grouped by topic.</p>
+      <a class="button" href="{{ url_for('resources', slug=bundle.slug) }}">Explore resources</a>
+    </article>
+  </div>
+</section>
+<section class="cta">
+  <a class="button" href="{{ url_for('index') }}">Create another paper</a>
+</section>
+{% endblock %}

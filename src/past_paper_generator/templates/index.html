@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Create a paper · GCSE Past Paper Generator{% endblock %}
+{% block content %}
+<section class="card">
+  <h2 class="card__title">Generate a bespoke paper</h2>
+  <p class="card__description">Select your subject, exam board and difficulty to create a printable exam paper with an accompanying mark scheme.</p>
+  <form class="generator-form" action="{{ url_for('generate') }}" method="post">
+    <div class="form-grid">
+      <label class="form-field">
+        <span class="form-label">Subject</span>
+        <select name="subject" required>
+          <option value="" disabled selected>Select a subject</option>
+          {% for value, label in subjects %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="form-label">Exam board</span>
+        <select name="exam_board" required>
+          <option value="" disabled selected>Choose exam board</option>
+          {% for value, label in exam_boards %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="form-label">Tier</span>
+        <select name="tier" required>
+          <option value="" disabled selected>Foundation or Higher</option>
+          {% for value, label in tiers %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="form-label">Difficulty</span>
+        <select name="difficulty" required>
+          <option value="" disabled selected>Choose difficulty</option>
+          {% for value, label in difficulties %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="form-label">Number of questions</span>
+        <input type="number" name="num_questions" min="1" max="30" value="10" required>
+      </label>
+    </div>
+    <button class="button" type="submit">Generate paper</button>
+  </form>
+</section>
+<section class="info-grid">
+  <article class="info-card">
+    <h3>LLM-ready prompts</h3>
+    <p>Parameter-driven prompts ensure consistent structure and ready-to-validate JSON responses.</p>
+  </article>
+  <article class="info-card">
+    <h3>Stylish PDFs</h3>
+    <p>Exam papers and mark schemes use coordinated typography and layout for immediate classroom use.</p>
+  </article>
+  <article class="info-card">
+    <h3>Teacher friendly</h3>
+    <p>Quickly tailor papers for revision sessions, mixed-ability classes or targeted homework packs.</p>
+  </article>
+</section>
+{% endblock %}
