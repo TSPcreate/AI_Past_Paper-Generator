@@ -46,40 +46,18 @@ def build_mark_scheme_pdf(path: Path, params: GenerationParams, entries: Sequenc
     doc = SimpleDocTemplate(str(path), pagesize=A4, rightMargin=36, leftMargin=36, topMargin=54, bottomMargin=36)
     styles = _styles()
     story = [
+        _branding_banner(styles),
+        Spacer(1, 10),
         Paragraph("GCSE Mark Scheme", styles["title"]),
-        Spacer(1, 12),
+        Spacer(1, 6),
         Paragraph(_metadata_line(params), styles["metadata"]),
         Spacer(1, 18),
     ]
 
-    table_data = [["Question", "Expected answer", "Marks", "Notes"]]
     for entry in entries:
-        table_data.append(
-            [
-                f"{entry.number}",
-                entry.answer,
-                str(entry.marks),
-                entry.notes or "",
-            ]
-        )
+        story.extend(_mark_scheme_section(entry, styles))
+        story.append(Spacer(1, 16))
 
-    table = Table(table_data, colWidths=[54, 270, 54, 108])
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1b4965")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.whitesmoke, colors.HexColor("#f7f7f7")]),
-            ]
-        )
-    )
-
-    story.append(table)
     doc.build(story)
     return path
 
@@ -101,6 +79,19 @@ def _styles() -> dict[str, ParagraphStyle]:
             textColor=colors.HexColor("#555555"),
             fontSize=10,
         ),
+        "banner_title": ParagraphStyle(
+            "BannerTitle",
+            parent=base["Heading2"],
+            fontSize=16,
+            textColor=colors.white,
+            leading=18,
+        ),
+        "banner_subtitle": ParagraphStyle(
+            "BannerSubtitle",
+            parent=base["BodyText"],
+            fontSize=9,
+            textColor=colors.HexColor("#f0f4f8"),
+        ),
         "body": ParagraphStyle(
             "BodyStyle",
             parent=base["BodyText"],
@@ -114,6 +105,33 @@ def _styles() -> dict[str, ParagraphStyle]:
             textColor=colors.HexColor("#102a43"),
             spaceAfter=6,
         ),
+        "section_heading": ParagraphStyle(
+            "SectionHeading",
+            parent=base["Heading3"],
+            fontSize=12,
+            textColor=colors.HexColor("#1b4965"),
+            spaceAfter=4,
+        ),
+        "marks_badge": ParagraphStyle(
+            "MarksBadge",
+            parent=base["BodyText"],
+            fontSize=11,
+            alignment=1,
+            textColor=colors.white,
+        ),
+        "table_header": ParagraphStyle(
+            "TableHeader",
+            parent=base["BodyText"],
+            fontSize=9,
+            textColor=colors.HexColor("#0a2540"),
+            leading=12,
+        ),
+        "notes_body": ParagraphStyle(
+            "NotesBody",
+            parent=base["BodyText"],
+            fontSize=10,
+            leading=14,
+        ),
     }
     return styles
 
@@ -123,3 +141,84 @@ def _metadata_line(params: GenerationParams) -> str:
         f"Subject: {params.subject.title()} | Exam board: {params.exam_board.upper()} | "
         f"Tier: {params.tier.title()} | Difficulty: {params.difficulty.title()}"
     )
+
+
+def _branding_banner(styles: dict[str, ParagraphStyle]) -> Table:
+    banner = Table(
+        [
+            [
+                Paragraph("<b>AFE Assessment</b>", styles["banner_title"]),
+                Paragraph("Dedicated to ambitious GCSE learners", styles["banner_subtitle"]),
+            ]
+        ],
+        colWidths=[320, 180],
+        hAlign="LEFT",
+    )
+    banner.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#102a43")),
+                ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#0b1d32")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]
+        )
+    )
+    return banner
+
+
+def _mark_scheme_section(entry: MarkSchemeEntry, styles: dict[str, ParagraphStyle]) -> list:
+    marks_text = f"{entry.marks} mark" if entry.marks == 1 else f"{entry.marks} marks"
+    header = Table(
+        [
+            [
+                Paragraph(f"Question {entry.number}", styles["section_heading"]),
+                Paragraph(marks_text, styles["marks_badge"]),
+            ]
+        ],
+        colWidths=[360, 120],
+    )
+    header.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#d9e2ec")),
+                ("BACKGROUND", (1, 0), (1, 0), colors.HexColor("#1b4965")),
+                ("BOX", (0, 0), (0, 0), 0.5, colors.HexColor("#9fb3c8")),
+                ("BOX", (1, 0), (1, 0), 0.5, colors.HexColor("#0f1f2f")),
+                ("LEFTPADDING", (0, 0), (0, 0), 10),
+                ("RIGHTPADDING", (1, 0), (1, 0), 6),
+                ("LEFTPADDING", (1, 0), (1, 0), 6),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]
+        )
+    )
+
+    panel_rows = [
+        [
+            Paragraph("<b>Marking guidance</b>", styles["table_header"]),
+            Paragraph("<b>Additional guidance</b>", styles["table_header"]),
+        ],
+        [
+            Paragraph(entry.answer, styles["body"]),
+            Paragraph(entry.notes or "Use teacher discretion for alternative valid methods.", styles["notes_body"]),
+        ],
+    ]
+
+    panel = Table(panel_rows, colWidths=[360, 120])
+    panel.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#edf2f7")),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#9fb3c8")),
+                ("LINEBEFORE", (1, 1), (1, 1), 0.5, colors.HexColor("#d9e2ec")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+
+    return [header, panel]
